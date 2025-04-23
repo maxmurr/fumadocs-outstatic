@@ -11,7 +11,7 @@ const octokit = new Octokit({
 
 // Repository information
 const REPO_OWNER = "maxmurr"; // GitHub username or organization
-const REPO_NAME = "fumadocs-app"; // Repository name
+const REPO_NAME = "outstatic-contents"; // Repository name
 const REPO_BRANCH = "main"; // Branch name
 const CONTENT_PATH = "outstatic/content/docs/"; // Path in the repository
 
