@@ -8,7 +8,7 @@ import {
 import { notFound } from "next/navigation";
 import defaultComponents from "fumadocs-ui/mdx";
 import { compileMDX, parseFrontmatter } from "@fumadocs/mdx-remote";
-import { type Frontmatter, getPage, getPages } from "@/lib/utils";
+import { type Frontmatter, getPageCached, getPagesCached } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{
@@ -18,7 +18,7 @@ interface PageProps {
 
 export default async function Page({ params }: PageProps) {
   const slugs = (await params).slug ?? [];
-  const page = await getPage(slugs as string[]);
+  const page = await getPageCached(slugs as string[]);
   if (!page) notFound();
 
   const {
@@ -41,14 +41,14 @@ export default async function Page({ params }: PageProps) {
 }
 
 export async function generateStaticParams() {
-  return (await getPages()).map((page) => ({ slug: page.slug }));
+  return (await getPagesCached()).map((page) => ({ slug: page.slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const slugs = (await params).slug ?? [];
-  const page = await getPage(slugs as string[]);
+  const page = await getPageCached(slugs as string[]);
   if (!page) notFound();
 
   const { frontmatter } = parseFrontmatter(page.content);
