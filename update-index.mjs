@@ -10,7 +10,7 @@ const content = fs.readFileSync(".next/server/app/static.json.body");
 const indexes = JSON.parse(content.toString());
 
 const client = algosearch(
-  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID,
+  "TVO8CQ0RNZ",
   process.env.ALGOLIA_WRITE_API_KEY
 );
 

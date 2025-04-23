@@ -9,7 +9,6 @@ import { notFound } from "next/navigation";
 import defaultComponents from "fumadocs-ui/mdx";
 import { compileMDX, parseFrontmatter } from "@fumadocs/mdx-remote";
 import { type Frontmatter, getPage, getPages } from "@/lib/utils";
-import { structure } from "fumadocs-core/mdx-plugins";
 
 interface PageProps {
   params: Promise<{
@@ -29,9 +28,6 @@ export default async function Page({ params }: PageProps) {
   } = await compileMDX<Frontmatter>({
     source: page.content,
   });
-
-  const structured = structure(page.content);
-  console.log(structured);
 
   return (
     <DocsPage toc={toc}>
