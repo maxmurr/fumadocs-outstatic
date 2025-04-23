@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { type DocumentRecord } from "fumadocs-core/search/algolia";
-import { getPageCached, getPagesCached } from "@/lib/utils";
+import { getPage, getPages } from "@/lib/utils";
 import { notFound } from "next/navigation";
 import { structure } from "fumadocs-core/mdx-plugins";
 
-export const revalidate = false;
+export const revalidate = 60;
 
 export async function GET() {
   const results: DocumentRecord[] = [];
-  const pages = await getPagesCached();
+  const pages = await getPages();
 
   for (const page of pages) {
-    const pageContent = await getPageCached(page.slug);
+    const pageContent = await getPage(page.slug);
     if (!pageContent) notFound();
 
     const structured = structure(pageContent.content);
