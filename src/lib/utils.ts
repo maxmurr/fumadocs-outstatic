@@ -1,6 +1,8 @@
 import { Octokit } from "@octokit/rest";
 import * as path from "node:path";
 import { Base64 } from "js-base64";
+import { PageTree } from "fumadocs-core/server";
+import { parseFrontmatter } from "@fumadocs/mdx-remote";
 
 // Configure GitHub client
 const octokit = new Octokit({
@@ -9,9 +11,9 @@ const octokit = new Octokit({
 
 // Repository information
 const REPO_OWNER = "maxmurr"; // GitHub username or organization
-const REPO_NAME = "outstatic-contents"; // Repository name
+const REPO_NAME = "fumadocs-app"; // Repository name
 const REPO_BRANCH = "main"; // Branch name
-const CONTENT_PATH = "outstatic/content/posts/"; // Path in the repository
+const CONTENT_PATH = "outstatic/content/docs/"; // Path in the repository
 
 export interface Frontmatter {
   title: string;
@@ -103,6 +105,59 @@ async function fetchFileContent(filePath: string) {
   }
 }
 
+export async function getPageTree(): Promise<PageTree.Root> {
+  const pages = await getPages();
+
+  // Create the root node
+  const root: PageTree.Root = {
+    name: "Documentation",
+    children: [],
+  };
+
+  // Helper function to create or get a folder node
+  function getOrCreateFolder(
+    path: string[],
+    parent: { children: PageTree.Node[] }
+  ): { children: PageTree.Node[] } {
+    if (path.length === 0) return parent;
+
+    const folderName = path[0];
+    let folder = parent.children.find(
+      (node): node is PageTree.Folder =>
+        node.type === "folder" && node.name === folderName
+    );
+
+    if (!folder) {
+      folder = {
+        type: "folder",
+        name: folderName,
+        children: [],
+      };
+      parent.children.push(folder);
+    }
+
+    return getOrCreateFolder(path.slice(1), folder);
+  }
+
+  // Build the tree structure
+  for (const page of pages) {
+    const pathParts = page.slug;
+    const dirPath = pathParts.slice(0, -1);
+
+    // Get or create the parent folder
+    const parent = getOrCreateFolder(dirPath, root);
+
+    // Add the page node using the frontmatter title
+    parent.children.push({
+      type: "page",
+      name: page.frontmatter.title,
+      url: `/docs/${page.slug.join("/")}`,
+    });
+  }
+
+  return root;
+}
+
 /**
  * Get all pages from GitHub repository
  */
@@ -110,6 +165,7 @@ export async function getPages(): Promise<
   {
     slug: string[];
     path: string;
+    frontmatter: Frontmatter;
   }[]
 > {
   try {
@@ -131,23 +187,37 @@ export async function getPages(): Promise<
       )
       .map((item: TreeItem) => item.path as string);
 
-    return mdxFiles.map((file: string) => {
-      const relativePath = file.slice(CONTENT_PATH.length + 1); // +1 for the slash
-      const parts = relativePath.split("/");
-      const last = parts[parts.length - 1];
+    const pages = await Promise.all(
+      mdxFiles.map(async (file: string) => {
+        const relativePath = file.slice(CONTENT_PATH.length); // Remove only the content path
+        const parts = relativePath.split("/");
+        const last = parts[parts.length - 1];
 
-      // Create slug array
-      const slugs = [...parts];
-      slugs[slugs.length - 1] = last.slice(0, -path.extname(last).length);
+        // Create slug array
+        const slugs = [...parts];
+        slugs[slugs.length - 1] = last.slice(0, -path.extname(last).length);
 
-      // Remove "index" from the end of the slug array
-      if (slugs[slugs.length - 1] === "index") slugs.pop();
+        // Remove "index" from the end of the slug array
+        if (slugs[slugs.length - 1] === "index") slugs.pop();
 
-      return {
-        path: file,
-        slug: slugs,
-      };
-    });
+        // Get page content and parse frontmatter
+        const pageContent = await fetchFileContent(file);
+        const { frontmatter } = parseFrontmatter(pageContent?.content || "");
+
+        // Ensure frontmatter has required title
+        if (!frontmatter.title) {
+          throw new Error(`Missing title in frontmatter for file: ${file}`);
+        }
+
+        return {
+          path: file,
+          slug: slugs,
+          frontmatter: frontmatter as Frontmatter,
+        };
+      })
+    );
+
+    return pages;
   } catch (error) {
     console.error("Error fetching pages:", error);
     return [];

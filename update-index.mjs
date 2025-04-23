@@ -1,3 +1,5 @@
+import './envConfig.mjs'
+
 import algosearch from "algoliasearch";
 import { sync } from "fumadocs-core/search/algolia";
 import * as fs from "node:fs";
@@ -8,8 +10,8 @@ const content = fs.readFileSync(".next/server/app/static.json.body");
 const indexes = JSON.parse(content.toString());
 
 const client = algosearch(
-  process.env.ALGOLIA_APP_ID,
-  process.env.ALGOLIA_API_KEY
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID,
+  process.env.ALGOLIA_WRITE_API_KEY
 );
 
 async function main() {

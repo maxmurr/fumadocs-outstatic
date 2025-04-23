@@ -8,7 +8,8 @@ import {
 import { notFound } from "next/navigation";
 import defaultComponents from "fumadocs-ui/mdx";
 import { compileMDX, parseFrontmatter } from "@fumadocs/mdx-remote";
-import { type Frontmatter, getPage, getPages } from "@/app/docs/utils";
+import { type Frontmatter, getPage, getPages } from "@/lib/utils";
+import { structure } from "fumadocs-core/mdx-plugins";
 
 interface PageProps {
   params: Promise<{
@@ -29,7 +30,8 @@ export default async function Page({ params }: PageProps) {
     source: page.content,
   });
 
-  console.log(toc);
+  const structured = structure(page.content);
+  console.log(structured);
 
   return (
     <DocsPage toc={toc}>
